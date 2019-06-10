@@ -10,7 +10,7 @@
   * [API Root URL](#api-root-url)
   * [Versioning](#versioning)
   * [Endpoints](#endpoints)
-  * [HTTP 动词](#http-动词)
+  * [HTTP Method](#http-method)
   * [Filtering](#filtering)
   * [Authentication](#authentication)
   * [Response](#response)
@@ -27,11 +27,11 @@
 
 > 参见：[RFC 2119](http://www.ietf.org/rfc/rfc2119.txt)
 
-## 协议
+## Protocol
 
 客户端在通过 `API` 与后端服务通信的过程中，`应该` 使用 `HTTPS` 协议。
 
-## API入口(根)路径
+## API Root URL
 
 `API` 的根入口点应尽可能保持足够简单，这里有两个常见的 `URL` 根例子：
 
@@ -40,7 +40,7 @@
 
 > 如果你的应用很庞大或者你预计它将会变的很庞大，那 `应该` 将 `API` 放到子域下（`api.example.com`）。这种做法可以保持某些规模化上的灵活性。
 
-## 版本及向后兼容
+## Versioning
 
 所有的 `API` 必须保持向后兼容，你 `必须` 在引入新版本 `API` 的同时确保旧版本 `API` 仍然可用。所以 `应该` 为其提供版本支持。
 
@@ -76,7 +76,7 @@ api.example.com/v1/*
 * POST https://api.example.com/employees
 * PUT  https://api.example.com/employees/56
 
-## HTTP 动词
+## HTTP Method
 
 对于资源的具体操作类型，由 `HTTP` 动词表示。常用的 `HTTP` 动词有下面五个（括号里是对应的 `SQL` 命令）。
 
