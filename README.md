@@ -33,18 +33,18 @@
 
 ## API Root URL
 
-`API` 的根入口点应尽可能保持足够简单，这里有两个常见的 `URL` 根例子：
+`API` 的根入口点应尽可能保持简单，这里有两个常见的例子:
 
 * api.example.com/*
 * example.com/api/*
 
-> 如果你的应用很庞大或者你预计它将会变的很庞大，那 `应该` 将 `API` 放到子域下（`api.example.com`）。这种做法可以保持某些规模化上的灵活性。
+> 如果你的应用很庞大或者你预计它将会变的很庞大，那 `应该` 将 `API` 放到子域下（`api.example.com`）。这种做法可以保持灵活性。
 
 ## Versioning
 
-所有的 `API` 必须保持向后兼容，你 `必须` 在引入新版本 `API` 的同时确保旧版本 `API` 仍然可用。所以 `应该` 为其提供版本支持。
+所有的`API` `必须` 保持向后兼容，你 `必须` 在引入新版本 `API` 的同时确保旧版本 `API` 仍然可用。所以 `应该` 为其提供版本支持。
 
-建议的作法是在 URL 中嵌入版本编号 v1,v2...
+建议的作法是在 URL 中嵌入版本编号 v1,v2...,比如
 
 ```bash
 api.example.com/v1/*
@@ -60,8 +60,6 @@ api.example.com/v1/*
 * URL `必须` 是易读的
 * URL `一定不可` 暴露服务器架构
 
-> 至于 URL 是否必须使用连字符（`-`） 或下划线（`_`），不做硬性规定，但 `必须` 根据团队情况统一一种风格。
-
 来看一些**反例**
 
 * https://api.example.com/getAllEmployees
@@ -76,14 +74,38 @@ api.example.com/v1/*
 * POST https://api.example.com/employees
 * PUT  https://api.example.com/employees/56
 
+###避免多级URL
+
+常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个员工的某一类配假信息:
+
+```bash
+GET https://api.example.com/employees/12/leavetypes/2
+```
+上面这种做法不利于扩展，更好的做法是，除了第一级，其他级别都用查询字符串表达
+
+```bash
+GET  https://api.example.com/employees/12?leavetypes=2
+```
+
+下面是另外一个例子，查询已退休的员工
+
+```bash
+GET https://api.example.com/employees/retired
+```
+不如
+
+```bash
+GET https://api.example.com/employees?retired=true
+```
+
 ## HTTP Method
 
 对于资源的具体操作类型，由 `HTTP` 动词表示。常用的 `HTTP` 动词有下面五个（括号里是对应的 `SQL` 命令）。
 
 * GET（SELECT）：从服务器取出资源（一项或多项）。
 * POST（CREATE）：在服务器新建一个资源。
-* PUT（UPDATE）：在服务器更新资源（客户端提供改变后的完整资源）。
-* PATCH（UPDATE）：在服务器更新资源（客户端提供改变的属性）。
+* PUT（UPDATE）：在服务器更新资源（客户端提供改变后的完整资源，整个替换）。
+* PATCH（UPDATE）：在服务器更新资源（客户端提供改变的属性，部分属性更新）。
 * DELETE（DELETE）：从服务器删除资源。
 
 其中
@@ -93,7 +115,7 @@ api.example.com/v1/*
 3. 删除资源 `必须` 用 `DELETE` 方法
 4. 获取资源信息 `必须` 使用 `GET` 方法  
 
-针对每一个端点来说，下面列出所有可行的 `HTTP` 动词和端点的组合
+针对每一个端点来说，下面列出可行的 `HTTP` 动词和端点的组合
 
 | 请求方法 | URL | 描述 |
 | ---------- | --- | --- |
@@ -180,7 +202,6 @@ Server: example.com
     }
 }
 ```
-
 或
 
 ```http
@@ -203,17 +224,7 @@ Server: example.com
 | 4xx | 客户端原因引起的错误 |
 | 5xx | 服务端原因引起的错误 |
 
-当 `API` 发生错误时，`必须` 返回出错时的详细信息。目前常见返回错误信息的方法有两种：
-
-1、将错误详细放入 `HTTP` 响应首部；
-
-```http
-X-MYNAME-ERROR-CODE: 4001
-X-MYNAME-ERROR-MESSAGE: Bad authentication token
-X-MYNAME-ERROR-INFO: http://docs.example.com/api/v1/authentication
-```
-
-2、直接放入响应实体中；
+当 `API` 发生错误时，`必须` 返回出错时的详细信息。我们将信息直接放入响应实体中；
 
 ```http
 HTTP/1.1 401 Unauthorized
@@ -227,7 +238,7 @@ Connection: keep-alive
 {"error_code":40100,"message":"Unauthorized"}
 ```
 
-考虑到易读性和客户端的易处理性，我们 `必须` 把错误信息直接放到响应实体中，并且错误格式 `应该` 满足如下格式：
+错误格式 `应该` 满足如下格式：
 
 ```json
 {
@@ -344,9 +355,52 @@ Connection: keep-alive
     }
 }
 ```
-
 > 其中，分页和其他额外的媒体信息，必须放到 `meta` 字段中。
 
+4、返回关联信息，我们假定员工有一个管理员和若干个团队成员
+```json
+{
+  "data": [
+    { 
+      "id": 1, 
+      "name": "Larry",
+      "relationships": {
+        "manager": "http://api.example.com/employees/1/manager",
+        "teamMembers": [ 
+          "http://api.example.com/employees/12",
+          "http://api.example.com/employees/13"
+        ]
+        //or "teamMembers": "http://api.example.com/employees/1/teamMembers"
+      }
+    }
+  ]
+}
+```
+或者
+```json
+{
+  "data": [
+    { 
+      "id": 1, 
+      "name": "Larry",
+      "relationships": {
+        "manager":  5 , 
+        "teamMembers": [ 12, 13 ]
+      }
+    }
+  ],
+  "included": {
+    "manager": {
+      "id": 5, 
+      "name": "Kevin"
+    },
+    "teamMembers": [
+      { "id": 12, "name": "Albert" }
+      , { "id": 13, "name": "Tom" }
+    ]
+  }
+}
+```
 ### 201 Created
 
 当服务器创建数据成功时，`应该` 返回此状态码。常见的应用场景是使用 `POST` 提交用户信息，如：
