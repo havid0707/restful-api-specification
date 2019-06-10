@@ -74,7 +74,7 @@ api.example.com/v1/*
 * POST https://api.example.com/employees
 * PUT  https://api.example.com/employees/56
 
-###避免多级URL
+避免多级URL
 
 常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个员工的某一类配假信息:
 
@@ -82,18 +82,14 @@ api.example.com/v1/*
 GET https://api.example.com/employees/12/leavetypes/2
 ```
 上面这种做法不利于扩展，更好的做法是，除了第一级，其他级别都用查询字符串表达
-
 ```bash
 GET  https://api.example.com/employees/12?leavetypes=2
 ```
-
 下面是另外一个例子，查询已退休的员工
-
 ```bash
 GET https://api.example.com/employees/retired
 ```
 不如
-
 ```bash
 GET https://api.example.com/employees?retired=true
 ```
@@ -187,8 +183,7 @@ Pragma: no-cache
 
 ## Response
 
-所有的 `API` 响应，`必须` 遵守 `HTTP` 设计规范，`必须` 选择合适的 `HTTP` 状态码。`一定不可` 所有接口都返回状态码为 `200` 的 `HTTP` 响应，如：
-
+所有的 `API` 响应，`必须` 遵守 `HTTP` 设计规范，`必须` 选择合适的 `HTTP` 状态码。`一定不可`采用所有接口都返回状态码为 `200`，然后在Body中才定义成功或者失败的方式 ，下面是一个糟糕的例子：
 ```http
 HTTP/1.1 200 ok
 Content-Type: application/json
@@ -202,8 +197,7 @@ Server: example.com
     }
 }
 ```
-或
-
+以及
 ```http
 HTTP/1.1 200 ok
 Content-Type: application/json
@@ -220,73 +214,8 @@ Server: example.com
 | 状态码 | 描述 |
 | ---------- | --- |
 | 2xx | 请求已成功，请求所希望的响应头或数据体将随此响应返回 |
-| 3xx | 重定向 |
 | 4xx | 客户端原因引起的错误 |
 | 5xx | 服务端原因引起的错误 |
-
-当 `API` 发生错误时，`必须` 返回出错时的详细信息。我们将信息直接放入响应实体中；
-
-```http
-HTTP/1.1 401 Unauthorized
-Server: nginx/1.11.9
-Content-Type: application/json
-Transfer-Encoding: chunked
-Cache-Control: no-cache, private
-Date: Sun, 24 Jun 2018 10:02:59 GMT
-Connection: keep-alive
-
-{"error_code":40100,"message":"Unauthorized"}
-```
-
-错误格式 `应该` 满足如下格式：
-
-```json
-{
-    "message": "您查找的资源不存在",
-    "error_code": 404001
-}
-```
-
-其中错误码（`error_code`）`必须` 和 `HTTP` 状态码对应，也方便错误码归类，如：
-
-```http
-HTTP/1.1 429 Too Many Requests
-Server: nginx/1.11.9
-Content-Type: application/json
-Transfer-Encoding: chunked
-Cache-Control: no-cache, private
-Date: Sun, 24 Jun 2018 10:15:52 GMT
-Connection: keep-alive
-
-{"error_code":429001,"message":"你操作太频繁了"}
-```
-
-```http
-HTTP/1.1 403 Forbidden
-Server: nginx/1.11.9
-Content-Type: application/json
-Transfer-Encoding: chunked
-Cache-Control: no-cache, private
-Date: Sun, 24 Jun 2018 10:19:27 GMT
-Connection: keep-alive
-
-{"error_code":403002,"message":"用户已禁用"}
-```
-
-`应该` 在返回的错误信息中，同时包含面向开发者和面向用户的提示信息，前者可方便开发人员调试，后者可直接展示给终端用户查看如：
-
-```json
-{
-    "message": "直接展示给终端用户的错误信息",
-    "error_code": "业务错误码",
-    "error": "供开发者查看的错误信息",
-    "debug": [
-        "错误堆栈，必须开启 debug 才存在"
-    ]
-}
-```
-
-下面详细列举了各种情况 API 的返回说明。
 
 ### 200 ok
 
@@ -442,63 +371,71 @@ Connection: keep-alive
 
 > 这里我们 `应该` 采用第二种方式，因为大多数情况下，客户端只需要知道该请求操作成功与否，并不需要返回新资源的信息。
 
-### 3xx 重定向
+### 错误处理
 
-所有 `API` `不该` 返回 `3xx` 类型的状态码。因为 `3xx` 类型的响应格式一般为下列格式：
-
-```html
-HTTP/1.1 302 Found
-Server: nginx/1.11.9
-Content-Type: text/html; charset=UTF-8
-Transfer-Encoding: chunked
-Cache-Control: no-cache, private
-Date: Sun, 24 Jun 2018 09:41:50 GMT
-Location: https://example.com
-Connection: keep-alive
-
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="refresh" content="0;url=https://example.com" />
-
-        <title>Redirecting to https://example.com</title>
-    </head>
-    <body>
-        Redirecting to <a href="https://example.com">https://example.com</a>.
-    </body>
-</html>
-```
-
-所有 `API` `一定不可` 返回纯 `HTML` 结构的响应；若一定要使用重定向功能，`可以` 返回一个响应实体为空的 `3xx` 响应，并在响应头中加上 `Location` 字段:
+当 `API` 发生错误时，`必须` 返回出错时的详细信息。我们将信息直接放入响应实体中；
 
 ```http
-HTTP/1.1 302 Found
-Server: nginx/1.11.9
-Content-Type: text/html; charset=UTF-8
-Transfer-Encoding: chunked
-Date: Sun, 24 Jun 2018 09:52:50 GMT
-Location: https://godruoyi.com
-Connection: keep-alive
-```
-
-### 400 Bad Request
-
-由于明显的客户端错误（例如，请求语法格式错误、无效的请求、无效的签名等），服务器 `应该` 放弃该请求。
-
-> 当服务器无法从其他 4xx 类型的状态码中找出合适的来表示错误类型时，都 `必须` 返回该状态码。
-
-```http
-HTTP/1.1 400 Bad Request
+HTTP/1.1 401 Unauthorized
 Server: nginx/1.11.9
 Content-Type: application/json
 Transfer-Encoding: chunked
 Cache-Control: no-cache, private
-Date: Sun, 24 Jun 2018 13:22:36 GMT
+Date: Sun, 24 Jun 2018 10:02:59 GMT
 Connection: keep-alive
 
-{"error_code":40000,"message":"无效的签名"}
+{"error_code":40100,"message":"Unauthorized"}
 ```
+
+错误格式 `应该` 满足如下格式：
+
+```json
+{
+    "message": "您查找的资源不存在",
+    "error_code": 404001
+}
+```
+
+其中错误码（`error_code`）`必须` 和 `HTTP` 状态码对应，也方便错误码归类，如：
+
+```http
+HTTP/1.1 429 Too Many Requests
+Server: nginx/1.11.9
+Content-Type: application/json
+Transfer-Encoding: chunked
+Cache-Control: no-cache, private
+Date: Sun, 24 Jun 2018 10:15:52 GMT
+Connection: keep-alive
+
+{"error_code":429001,"message":"你操作太频繁了"}
+```
+
+```http
+HTTP/1.1 403 Forbidden
+Server: nginx/1.11.9
+Content-Type: application/json
+Transfer-Encoding: chunked
+Cache-Control: no-cache, private
+Date: Sun, 24 Jun 2018 10:19:27 GMT
+Connection: keep-alive
+
+{"error_code":403002,"message":"用户已禁用"}
+```
+
+`应该` 在返回的错误信息中，同时包含面向开发者和面向用户的提示信息，前者可方便开发人员调试，后者可直接展示给终端用户查看如：
+
+```json
+{
+    "message": "直接展示给终端用户的错误信息",
+    "error_code": "业务错误码",
+    "error": "供开发者查看的错误信息",
+    "debug": [
+        "错误堆栈，必须开启 debug 才存在"
+    ]
+}
+```
+
+下面详细列举了各种情况 API 的返回说明。
 
 ### 401 Unauthorized
 
