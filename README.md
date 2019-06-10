@@ -9,8 +9,9 @@
   * [Protocol](#protocol)
   * [API Root URL](#api-root-url)
   * [Versioning](#versioning)
-  * [Endpoints](#endpoints)
   * [HTTP Method](#http-method)
+  * [Endpoints](#endpoints)
+  * [URL Best Practices](#url-best-practices)
   * [Filtering](#filtering)
   * [Authentication](#authentication)
   * [Response](#response)
@@ -50,50 +51,6 @@
 api.example.com/v1/*
 ```
 
-## Endpoints
-
-端点就是指向特定资源或资源集合的 `URL`。在端点的设计中，你 `必须` 遵守下列约定：
-
-* URL 的命名 `必须` 全部小写
-* URL 中资源（`resource`）的命名 `必须` 是名词，并且 `必须` 是复数形式
-* `必须` 优先使用 `Restful` 类型的 URL
-* URL `必须` 是易读的
-* URL `一定不可` 暴露服务器架构
-
-来看一些**反例**
-
-* https://api.example.com/getAllEmployees
-* https://api.example.com/getAllExternalEmployees
-* https://api.example.com/createEmployee
-* https://api.example.com/updateEmployee
-
-再来看一些**正例**
-
-* GET  https://api.example.com/employees
-* GET  https://api.example.com/employees?state=external
-* POST https://api.example.com/employees
-* PUT  https://api.example.com/employees/56
-
-避免多级URL
-
-常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个员工的某一类配假信息:
-
-```bash
-GET https://api.example.com/employees/12/leavetypes/2
-```
-上面这种做法不利于扩展，更好的做法是，除了第一级，其他级别都用查询字符串表达
-```bash
-GET  https://api.example.com/employees/12?leavetypes=2
-```
-下面是另外一个例子，查询已退休的员工
-```bash
-GET https://api.example.com/employees/retired
-```
-不如
-```bash
-GET https://api.example.com/employees?retired=true
-```
-
 ## HTTP Method
 
 对于资源的具体操作类型，由 `HTTP` 动词表示。常用的 `HTTP` 动词有下面五个（括号里是对应的 `SQL` 命令）。
@@ -124,6 +81,75 @@ GET https://api.example.com/employees?retired=true
 | GET | /employees/{empId}/managers | 检索指定员工下的负责人列表 |
 
 > 超出 `Restful` 端点的，`应该` 模仿上表的方式来定义端点。
+
+## Endpoints
+
+端点就是指向特定资源或资源集合的 `URL`。在端点的设计中，你 `必须` 遵守下列约定：
+
+* URL 的命名 `必须` 全部小写
+* URL 中资源（`resource`）的命名 `必须` 是名词，并且 `必须` 是复数形式
+* `必须` 优先使用 `Restful` 类型的 URL
+* URL `必须` 是易读的
+* URL `一定不可` 暴露服务器架构
+
+来看一些**反例**
+
+* https://api.example.com/getAllEmployees
+* https://api.example.com/getAllExternalEmployees
+* https://api.example.com/createEmployee
+* https://api.example.com/updateEmployee
+* https://api.example.com/internalAndSeniorEmployees
+
+再来看一些**正例**
+
+* GET  https://api.example.com/employees
+* GET  https://api.example.com/employees?state=external
+* POST https://api.example.com/employees
+* PUT  https://api.example.com/employees/56
+* GET  https://api.example.com/employees?state=internal&title=senior
+
+## URL Best Practices
+
+**避免多级URL**
+
+常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个员工的某一类配假信息:
+```bash
+GET https://api.example.com/employees/12/leavetypes/2
+```
+上面这种做法不利于扩展，更好的做法是，除了第一级，其他级别都用查询字符串表达
+```bash
+GET  https://api.example.com/employees/12?leavetypes=2
+```
+下面是另外一个例子，查询已退休的员工
+```bash
+GET https://api.example.com/employees/retired
+```
+不如
+```bash
+GET https://api.example.com/employees?retired=true
+```
+**对Action构建URL**
+
+有时,对API调用的响应不涉及资源(如计算，转换或转换),比如下面的例子不涉及到具体的资源,在命名URL时应该使用动词
+```bash
+//Reading
+GET /translate?from=de_DE&to=en_US&text=Hallo
+GET /calculate?para2=23&para2=432
+
+//Trigger an operation that changes the server-side state
+POST /restartServer
+//no body
+
+POST /banUserFromChannel
+{ "user": "123", "channel": "serious-chat-channel" }
+```
+其它的解决方法供参考的还有:
+1. 如果Action是不带参数的，比如发布一个流程，实质是映射到流程中的一个字段```published```,那么可以将action这种形式等价为对```流程```这种资源的```PATCH```动作，部分更新```published```字段
+
+2. 将action视为一种子资源(sub-resource),那么上面的例子,发布流程```PUT /wftpls/:id/published```,取消发布为```DELETE /wftpls/:id/published```
+
+注意: 在实际当中，RESTful API Design并不能覆盖所有的情况，以实质重于形式考虑，使用动词命名的方法可能是更好的选择.
+
 
 ## Filtering
 
